@@ -1,8 +1,8 @@
-import React from 'react'
-const Blog = ({ blog }) => (
-  <div>
-    {blog.title} {blog.author}
+import React from "react";
+const Blog = ({ blog, title, author, url }) => (
+  <div key={blog.id} className="blog">
+    {blog.title} {blog.author} {blog.url}
   </div>
-)
+);
 
-export default Blog
+export default Blog;
