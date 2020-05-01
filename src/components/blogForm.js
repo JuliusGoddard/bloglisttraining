@@ -1,41 +1,30 @@
-import React, { useState } from "react";
+import React from "react";
+import { createBlog } from "../reducers/blogReducer";
+import { useDispatch } from "react-redux";
+import blogService from "../services/blogs";
 
-const BlogForm = ({ createBlog }) => {
-  const [url, setUrl] = useState("");
-  const [title, setTitle] = useState("");
-  const [author, setAuthor] = useState("");
-
-  const handleUrlChange = event => {
-    setUrl(event.target.value);
-  };
-
-  const handleTitleChange = event => {
-    setTitle(event.target.value);
-  };
-
-  const handleAuthorChange = event => {
-    setAuthor(event.target.value);
-  };
-
-  const addBlog = e => {
-    e.preventDefault();
-    createBlog({
-      title: title,
-      author: author,
-      url: url
-    });
-    setTitle("");
-    setAuthor("");
-    setUrl("");
+const BlogForm = () => {
+  const dispatch = useDispatch();
+  const newBlogRef = React.createRef();
+  const addBlog = async event => {
+    event.preventDefault();
+    const title = event.target.title.value;
+    const author = event.target.author.value;
+    const url = event.target.url.value;
+    event.target.title.value = "";
+    event.target.author.value = "";
+    event.target.url.value = "";
+    const newBlog = await blogService.createNew(author, title, url);
+    dispatch(createBlog(newBlog));
   };
 
   return (
     <div>
       <h2>Create a new blogpost</h2>
-      <form onSubmit={addBlog}>
-        <input id="title" value={title} onChange={handleTitleChange} />
-        <input id="author" value={author} onChange={handleAuthorChange} />
-        <input id="url" value={url} onChange={handleUrlChange} />
+      <form onSubmit={addBlog} ref={newBlogRef}>
+        <input id="title" name="title" />
+        <input id="author" name="author" />
+        <input id="url" name="url" />
         <button type="submit">create</button>
       </form>
     </div>

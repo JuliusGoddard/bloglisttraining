@@ -6,7 +6,17 @@ import LoginForm from "./components/loginForm";
 import BlogForm from "./components/blogForm";
 import Togglable from "./components/toggalable";
 import Notification from "./components/Notification";
-import { createStore } from "redux";
+import { initializeBlogs } from "./reducers/blogReducer";
+import { useDispatch } from "react-redux";
+import Users from "./components/Users";
+import User from "./components/User";
+import Singleblog from "./components/Singleblog";
+import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
+import Container from "@material-ui/core/Container";
+import Button from "@material-ui/core/Button";
+import AppBar from "@material-ui/core/AppBar";
+import Toolbar from "@material-ui/core/Toolbar";
+import IconButton from "@material-ui/core/IconButton";
 
 const App = () => {
   const [blogs, setBlogs] = useState([]);
@@ -15,6 +25,16 @@ const App = () => {
   const [user, setUser] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
   const [loginVisible, setLoginVisible] = useState(false);
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    const loggedUserJSON = window.localStorage.getItem("loggedBlogappUser");
+    if (loggedUserJSON) {
+      const user = JSON.parse(loggedUserJSON);
+      setUser(user);
+      blogService.setToken(user.token);
+    }
+  }, []);
 
   const addBlog = blogObject => {
     blogFormRef.current.toggleVisibility();
@@ -45,17 +65,18 @@ const App = () => {
   };
 
   useEffect(() => {
-    blogService.getAll().then(blogs => setBlogs(blogs));
-  }, []);
+    blogService.getAll().then(blogs => dispatch(initializeBlogs(blogs)));
+  }, [dispatch]);
 
-  useEffect(() => {
-    const loggedUserJSON = window.localStorage.getItem("loggedBlogappUser");
-    if (loggedUserJSON) {
-      const user = JSON.parse(loggedUserJSON);
-      setUser(user);
-      blogService.setToken(user.token);
-    }
-  }, []);
+  //useEffect(() => {
+  //  dispatch(initializeBlogs());
+  //}, [dispatch]);
+
+  const handleLogout = async event => {
+    event.preventDefault();
+    window.localStorage.removeItem("loggedBlogappUser");
+    window.location.reload();
+  };
 
   const loginForm = () => {
     const hideWhenVisible = { display: loginVisible ? "none" : "" };
@@ -64,7 +85,9 @@ const App = () => {
     return (
       <div>
         <div style={hideWhenVisible}>
-          <button onClick={() => setLoginVisible(true)}>log in</button>
+          <Button variant="contained" onClick={() => setLoginVisible(true)}>
+            log in
+          </Button>
         </div>
         <div style={showWhenVisible}>
           <LoginForm
@@ -74,7 +97,9 @@ const App = () => {
             handlePasswordChange={({ target }) => setPassword(target.value)}
             handleSubmit={handleLogin}
           />
-          <button onClick={() => setLoginVisible(false)}>cancel</button>
+          <Button variant="contained" onClick={() => setLoginVisible(false)}>
+            cancel
+          </Button>
         </div>
       </div>
     );
@@ -96,24 +121,71 @@ const App = () => {
   //    );
   //  };
 
+  const padding = {
+    padding: 5
+  };
+
   return (
-    <div>
-      <h1>Blogposts</h1>
-      <Notification message={errorMessage} />
-      {user === null ? (
-        loginForm()
-      ) : (
+    <Container>
+      <Router>
+        <AppBar position="static">
+          <Toolbar>
+            <IconButton
+              edge="start"
+              color="inherit"
+              aria-label="menu"
+            ></IconButton>
+            <Button color="inherit">
+              <Link style={padding} to="/users">
+                Users
+              </Link>
+            </Button>
+            <Button color="inherit">
+              <Link style={padding} to="/blogs">
+                Blogs
+              </Link>
+            </Button>
+            <Button color="inherit">
+              {user ? (
+                <em>{user.username} logged in</em>
+              ) : (
+                <Link style={padding} to="/login">
+                  login
+                </Link>
+              )}
+            </Button>
+          </Toolbar>
+        </AppBar>
         <div>
-          <p>{user.name} logged in</p> {blogForm()}
+          <h1>Blogposts</h1>
+          <Notification message={errorMessage} />
+          {user === null ? (
+            loginForm()
+          ) : (
+            <div>
+              <button onClick={handleLogout}>logout</button> {blogForm()}
+            </div>
+          )}
+
+          <Switch>
+            <Route path="/blogs/:id">
+              <Singleblog />
+            </Route>
+            <Route path="/blogs">
+              <Blog />
+            </Route>
+          </Switch>
+          <Switch>
+            <Route path="/users/:id">
+              <User />
+            </Route>
+            <Route path="/users">
+              <Users />
+            </Route>
+          </Switch>
         </div>
-      )}
-
-      <h2>blogs</h2>
-
-      {blogs.map(blog => (
-        <Blog key={blog.id} blog={blog} />
-      ))}
-    </div>
+      </Router>
+    </Container>
   );
 };
 
